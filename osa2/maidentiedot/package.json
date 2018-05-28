@@ -1,12 +1,11 @@
 {
-  "name": "puhelinluettelo",
+  "name": "maidentiedot",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
     "axios": "^0.18.0",
-    "json-server": "^0.12.2",
-    "react": "^16.3.2",
-    "react-dom": "^16.3.2",
+    "react": "^16.4.0",
+    "react-dom": "^16.4.0",
     "react-scripts": "1.1.4"
   },
   "scripts": {
@@ -14,6 +13,6 @@
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
-    "server": "json-server -p3001 db.json"
+    "server": "https://restcountries.eu/rest/v2/all"
   }
 }

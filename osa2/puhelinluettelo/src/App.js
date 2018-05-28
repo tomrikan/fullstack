@@ -1,4 +1,9 @@
-import React from 'react';
+import React from 'react'
+import personService from './services/persons'
+import NewPerson from './components/NewPerson'
+import Constraint from './components/Constraint'
+import Person from './components/Person'
+import './App.css'
 
 function contains(a, obj) {
     for (var i = 0; i < a.length; i++) {
@@ -20,13 +25,11 @@ class App extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
-            persons: [
-                { name: 'Arto Hellas', number: '040-123456' },
-                { name: 'Lea Kutvonen', number: '040-654321' }
-            ],
+            persons: [],
             newName: '',
             newNumber: '',
-            filter: ''
+            filter: '',
+            success: ''
         }
     }
 
@@ -39,21 +42,39 @@ class App extends React.Component {
             number: this.state.newNumber
         }
 
-        console.log(this.state.newName)
-        console.log(this.state.persons)
-
         if (contains(this.state.persons, personObject) === false) {
-            const uusPersons = this.state.persons.concat(personObject)
+            personService.create(personObject).then(response => {
+                this.setState({
+                    persons: this.state.persons.concat(response.data),
+                    newName: '',
+                    newNumber: '',
+                    success: `lisättiin ${personObject.name}`
+                })
+                setTimeout(() => {
+                    this.setState({ success: null })
+                }, 5000)
+            })
+        }
+        else {
             this.setState({
-                persons: uusPersons,
                 newName: '',
                 newNumber: ''
             })
-        } else {
-            this.setState({
-                newName: '',
-                newNumber: ''
+        }
+    }
+
+    handleDelete = (id) => {
+        return () => {
+            const person = this.state.persons.find(p => p.id === id)
+            personService.remove(id).then(deleted => {
+                this.componentDidMount()
+                this.setState({
+                    success: `poistettiin ${person.name}`
+                })
             })
+            setTimeout(() => {
+                this.setState({ success: null })
+            }, 5000)
         }
     }
 
@@ -71,64 +92,74 @@ class App extends React.Component {
         this.setState({ filter: event.target.value })
     }
 
+    componentDidMount() {
+        personService.getAll().then(response => {
+            this.setState({ persons: response.data })
+        })
+    }
+
     render() {
+        const personsToShow =
+            this.state.filter.length === 0 ?
+                this.state.persons :
+                this.state.persons.filter(person => person.name.includes(this.state.filter))
+        if (this.state.success !== '') {
+            return (
+                <div>
+                    <h1>Puhelinluettelo</h1>
+                    <Notification message={this.state.success} />
+                    <Constraint filter={this.state.filter} handler={this.handleConstraint} />
+                    <NewPerson personHandler={this.addPerson} name={this.state.newName}
+                        nameHandler={this.handleNewName} number={this.state.newNumber}
+                        numberHandler={this.handleNewNumber} />
+                    <h2>Numerot</h2>
+                    <div>
+                        <table>
+                            <tbody>
+                                {personsToShow.map(person =>
+                                    <Person
+                                        key={person.name}
+                                        person={person}
+                                        deleteHandler={this.handleDelete(person.id)}
+                                    />)}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )
+        }
         return (
             <div>
                 <h1>Puhelinluettelo</h1>
                 <Constraint filter={this.state.filter} handler={this.handleConstraint} />
-                <AddNewPerson personHandler={this.addPerson} name={this.state.newName}
+                <NewPerson personHandler={this.addPerson} name={this.state.newName}
                     nameHandler={this.handleNewName} number={this.state.newNumber}
                     numberHandler={this.handleNewNumber} />
                 <h2>Numerot</h2>
                 <div>
-                    <DisplayPersons persons={this.state.persons} filter={this.state.filter} />
+                    <table>
+                        <tbody>
+                            {personsToShow.map(person =>
+                                <Person
+                                    key={person.name}
+                                    person={person}
+                                    deleteHandler={this.handleDelete(person.id)}
+                                />)}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         )
     }
 }
 
-const AddNewPerson = (props) => {
+const Notification = ({ message }) => {
+    if (message === null) {
+        return null
+    }
     return (
-        <div>
-            <h2>Lisää uusi</h2>
-            <form onSubmit={props.personHandler}>
-                <div>
-                    nimi: <input value={props.name}
-                        onChange={props.nameHandler} />
-                </div>
-                <div>
-                    numero: <input value={props.number}
-                        onChange={props.numberHandler} />
-                </div>
-                <div>
-                    <button type="submit">lisää</button>
-                </div>
-            </form>
-        </div>
-    )
-}
-
-const Constraint = (props) => {
-    return (
-        <div>
-            rajaa: <input value={props.filter}
-                onChange={props.handler} />
-        </div>
-    )
-}
-
-const DisplayPersons = (props) => {
-    const toShow = props.persons.filter(function (person) {
-        return person.name.toLowerCase().includes(props.filter.toLowerCase())
-    })
-    return (
-        <div>
-            <table>
-                <tbody>
-                    {toShow.map(person => <tr key={person.name}><td>{person.name}</td><td>{person.number}</td></tr>)}
-                </tbody>
-            </table>
+        <div className="success">
+            {message}
         </div>
     )
 }
